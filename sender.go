@@ -18,8 +18,9 @@ func (s *Sender) Send(m *Message) error {
 	if err != nil {
 		return err
 	}
-
-	m.setFrom(s.from)
+	if m.header.from.Address == "" {
+		m.header.from.Address = s.from
+	}
 	return s.send(s.from, rcpt, m)
 }
 

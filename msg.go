@@ -38,8 +38,8 @@ type Message struct {
 	files  []*file
 }
 
-func (m *Message) setFrom(from string) {
-	m.header.from = from
+func (m *Message) SetFrom(address mail.Address) {
+	m.header.from = address
 }
 
 func (m *Message) rcpt() ([]string, error) {
@@ -80,7 +80,7 @@ func (p *part) contentType() string {
 }
 
 type header struct {
-	from string
+	from mail.Address
 	to   []*mail.Address
 	cc   []*mail.Address
 	bcc  []*mail.Address
@@ -147,13 +147,8 @@ func (h *header) writeTo(w io.Writer) (int, error) {
 	b.WriteString("\r\n")
 
 	// FROM
-	from := &mail.Address{
-		Name:    "",
-		Address: h.from,
-	}
-
 	b.WriteString("FROM: ")
-	b.WriteString(from.String())
+	b.WriteString(h.from.String())
 	b.WriteString("\r\n")
 
 	// TO
