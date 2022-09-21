@@ -1,6 +1,7 @@
 package mailx
 
 import (
+	"bytes"
 	"io"
 )
 
@@ -9,7 +10,15 @@ import (
 // Sender sends emails via *smtp.Client
 type Sender struct {
 	smtpClient
-	from string
+	from   string
+	signer Signer
+}
+
+type Signer func([]byte) ([]byte, error)
+
+// SetSigner Set Signer
+func (s *Sender) SetSigner(signer Signer) {
+	s.signer = signer
 }
 
 // Send sends the given emails.
@@ -40,9 +49,22 @@ func (s *Sender) send(from string, to []string, msg io.WriterTo) error {
 	if err != nil {
 		return err
 	}
+	buf := &bytes.Buffer{}
+	if _, err = msg.WriteTo(buf); err != nil {
+		_ = w.Close()
+		return err
+	}
+	mes := buf.Bytes()
+	if s.signer != nil {
+		mes, err = s.signer(mes)
+		if err != nil {
+			_ = w.Close()
+			return err
+		}
+	}
 
-	if _, err = msg.WriteTo(w); err != nil {
-		w.Close()
+	if _, err = w.Write(mes); err != nil {
+		_ = w.Close()
 		return err
 	}
 	return w.Close()
